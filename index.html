@@ -353,7 +353,8 @@
         
         // Carregar produtos da API
         
-        async function loadProducts() {
+        // Carregar produtos da API
+async function loadProducts() {
     try {
         showLoading();
         hideError();
@@ -364,7 +365,20 @@
         
         console.log('Carregando produtos da API:', API_URL);
         
-        const response = await fetch(`${API_URL}?action=getProducts`);
+        // USAR ESTE MÉTODO PARA EVITAR CORS
+        // Adicione "t=" + timestamp para evitar cache
+        const timestamp = new Date().getTime();
+        const url = `${API_URL}?action=getProducts&t=${timestamp}`;
+        
+        // Método 1: Tentar com fetch e CORS
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit',
+            headers: {
+                'Accept': 'application/json',
+            }
+        });
         
         if (!response.ok) {
             throw new Error(`Erro na API: ${response.status}`);
@@ -399,7 +413,14 @@
     } catch (error) {
         console.error('❌ Erro ao carregar produtos:', error);
         
-        // Tentar cache local
+        // Método 2: Usar proxy CORS (fallback)
+        if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
+            console.log('Tentando método alternativo...');
+            await loadProductsWithJSONP();
+            return;
+        }
+        
+        // Método 3: Tentar cache local
         try {
             const cache = localStorage.getItem('catalog-cache');
             if (cache) {
@@ -418,12 +439,48 @@
             console.error('Erro no cache:', cacheError);
         }
         
-        // Exibir mensagem de erro detalhada
-        showError(`Não foi possível carregar o catálogo: ${error.message}. Detalhes: ${error}`);
+        // Exibir mensagem de erro
+        showError(`Não foi possível carregar o catálogo: ${error.message}`);
         
     } finally {
         hideLoading();
     }
+}
+
+// Método alternativo usando JSONP (para contornar CORS)
+function loadProductsWithJSONP() {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'jsonpCallback_' + Date.now();
+        
+        // Criar função temporária
+        window[callbackName] = function(data) {
+            // Limpar recursos
+            delete window[callbackName];
+            document.head.removeChild(script);
+            
+            if (data.error) {
+                reject(new Error(data.error));
+                return;
+            }
+            
+            products = data.products || [];
+            extractCategories();
+            renderProducts('todos');
+            updateStats();
+            updateSyncStatus(true);
+            resolve(data);
+        };
+        
+        // Criar script tag
+        const script = document.createElement('script');
+        script.src = `${API_URL}?action=getProducts&callback=${callbackName}`;
+        script.onerror = () => {
+            delete window[callbackName];
+            reject(new Error('Falha no carregamento JSONP'));
+        };
+        
+        document.head.appendChild(script);
+    });
 }
 
         
@@ -615,9 +672,38 @@
                 loadProducts();
             }
         });
+
+        // Função para mostrar erro detalhado
+function showError(message, error = null) {
+    errorText.textContent = message;
+    
+    // Adicionar detalhes técnicos para debug
+    if (error) {
+        errorText.innerHTML += `<br><small style="color: #666; font-size: 0.8rem;">Detalhes: ${error.message || error}</small>`;
+    }
+    
+    // Adicionar instruções para o usuário
+    const helpText = document.createElement('div');
+    helpText.innerHTML = `
+        <div style="margin-top: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+            <h4 style="margin-bottom: 0.5rem;">Soluções possíveis:</h4>
+            <ol style="text-align: left; margin-left: 1.5rem;">
+                <li>Verifique sua conexão com a internet</li>
+                <li>Tente recarregar a página (F5)</li>
+                <li>Verifique se a API está publicada corretamente</li>
+                <li>Contate o administrador do sistema</li>
+            </ol>
+        </div>
+    `;
+    
+    errorElement.appendChild(helpText);
+    errorElement.classList.remove('hidden');
+    updateSyncStatus(false);
+}
     </script>
 </body>
 
 </html>
+
 
 
