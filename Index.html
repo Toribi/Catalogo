@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Produtos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --gray-color: #95a5a6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+            color: var(--secondary-color);
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .admin-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 0.8rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--secondary-color);
+            text-align: center;
+        }
+
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-image {
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-info {
+            padding: 1.2rem;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .product-description {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .product-category {
+            display: inline-block;
+            background-color: var(--light-color);
+            color: var(--primary-color);
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .empty-catalog {
+            text-align: center;
+            padding: 3rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            grid-column: 1 / -1;
+        }
+
+        .empty-catalog i {
+            font-size: 3rem;
+            color: var(--gray-color);
+            margin-bottom: 1rem;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+        footer {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-color);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 2rem;
+            background-color: #ffeaea;
+            border-radius: 8px;
+            border: 1px solid #ffcccc;
+            color: #d63031;
+            grid-column: 1 / -1;
+        }
+
+        .retry-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        .sync-status {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+
+        .sync-status.online {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .sync-status.offline {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .catalog-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .catalog-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                <h1>Catálogo Virtual</h1>
+                <span id="sync-status" class="sync-status online">🟢 Online</span>
+            </div>
+            <a href="catalogo-admin.html" class="admin-link">
+                <i class="fas fa-user-shield"></i> Admin
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2 class="section-title">Nossos Produtos</h2>
+        
+        <div class="filters">
+            <button class="filter-btn active" data-category="todos">Todos</button>
+            <!-- As categorias serão carregadas dinamicamente -->
+        </div>
+        
+        <div id="catalog-container" class="catalog-grid">
+            <div class="loading" id="loading">
+                <i class="fas fa-spinner"></i>
+                <p>Carregando catálogo...</p>
+            </div>
+        </div>
+        
+        <div id="error-message" class="error-message hidden">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Erro ao carregar o catálogo</h3>
+            <p id="error-text">Não foi possível carregar os produtos. Tente novamente mais tarde.</p>
+            <button id="retry-btn" class="retry-btn">
+                <i class="fas fa-redo"></i> Tentar Novamente
+            </button>
+        </div>
+    </main>
+
+    <footer>
+        <p>Catálogo Virtual &copy; <span id="current-year"></span></p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+            <span id="product-count">0 produtos</span> | 
+            Atualizado em: <span id="last-update">-</span>
+        </p>
+    </footer>
+
+    <script>
+        // =================== CONFIGURAÇÃO ===================
+        // URL DA SUA API DO GOOGLE APPS SCRIPT
+        // SUBSTITUA PELA SUA URL COMPLETA!
+        const API_URL = 'https://corsproxy.io/?https://script.google.com/macros/s/AKfycbyYTu14-rMOGmsfzWCHghvh__-5jYCkUf7h99wv8r9_0K-zdrc180ouyGGpYCafxOQ/exec';
+
+        
+        // =================== VARIÁVEIS ===================
+        let products = [];
+        let categories = new Set(['todos']);
+        let isLoading = true;
+        let isOnline = navigator.onLine;
+        
+        // =================== ELEMENTOS DOM ===================
+        const catalogContainer = document.getElementById('catalog-container');
+        const loadingElement = document.getElementById('loading');
+        const errorElement = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const retryBtn = document.getElementById('retry-btn');
+        const filtersContainer = document.querySelector('.filters');
+        const productCountEl = document.getElementById('product-count');
+        const lastUpdateEl = document.getElementById('last-update');
+        const syncStatus = document.getElementById('sync-status');
+        const currentYear = document.getElementById('current-year');
+        
+        // =================== FUNÇÕES PRINCIPAIS ===================
+        
+        // Carregar produtos da API
+        
+        async function loadProducts() {
+    try {
+        showLoading();
+        hideError();
+        
+        if (!isOnline) {
+            throw new Error('Sem conexão com a internet');
+        }
+        
+        console.log('Carregando produtos da API:', API_URL);
+        
+        const response = await fetch(`${API_URL}?action=getProducts`);
+        
+        if (!response.ok) {
+            throw new Error(`Erro na API: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        products = data.products || [];
+        
+        // Salvar cache local
+        localStorage.setItem('catalog-cache', JSON.stringify({
+            products: products,
+            timestamp: Date.now()
+        }));
+        
+        // Extrair categorias
+        extractCategories();
+        
+        // Renderizar produtos
+        renderProducts('todos');
+        
+        // Atualizar status
+        updateStats();
+        updateSyncStatus(true);
+        
+        console.log(`✅ Carregados ${products.length} produtos`);
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar produtos:', error);
+        
+        // Tentar cache local
+        try {
+            const cache = localStorage.getItem('catalog-cache');
+            if (cache) {
+                const cached = JSON.parse(cache);
+                // Cache válido por 1 hora
+                if (Date.now() - cached.timestamp < 3600000) {
+                    products = cached.products;
+                    extractCategories();
+                    renderProducts('todos');
+                    updateStats();
+                    showMessage('📡 Usando cache local (modo offline)', 'info');
+                    return;
+                }
+            }
+        } catch (cacheError) {
+            console.error('Erro no cache:', cacheError);
+        }
+        
+        // Exibir mensagem de erro detalhada
+        showError(`Não foi possível carregar o catálogo: ${error.message}. Detalhes: ${error}`);
+        
+    } finally {
+        hideLoading();
+    }
+}
+
+        
+        // Extrair categorias dos produtos
+        function extractCategories() {
+            categories = new Set(['todos']);
+            products.forEach(product => {
+                if (product.category && product.category.trim() !== '') {
+                    categories.add(product.category);
+                }
+            });
+        }
+        
+        // Renderizar produtos
+        function renderProducts(category = 'todos') {
+            catalogContainer.innerHTML = '';
+            
+            // Filtrar por categoria
+            let filteredProducts = products;
+            if (category !== 'todos') {
+                filteredProducts = products.filter(p => p.category === category);
+            }
+            
+            // Ordenar por data (mais recentes primeiro)
+            filteredProducts.sort((a, b) => b.id - a.id);
+            
+            if (filteredProducts.length === 0) {
+                catalogContainer.innerHTML = `
+                    <div class="empty-catalog">
+                        <i class="fas fa-box-open"></i>
+                        <h3>Nenhum produto encontrado</h3>
+                        <p>${category === 'todos' ? 'O catálogo está vazio.' : 'Nenhum produto nesta categoria.'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Criar cards para cada produto
+            filteredProducts.forEach(product => {
+                const productCard = createProductCard(product);
+                catalogContainer.appendChild(productCard);
+            });
+            
+            // Atualizar filtros
+            updateCategoryFilters();
+        }
+        
+        // Criar card de produto
+        function createProductCard(product) {
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            
+            const imageUrl = product.images && product.images.length > 0 
+                ? product.images[0] 
+                : 'https://via.placeholder.com/300x200?text=Sem+imagem';
+            
+            productCard.innerHTML = `
+                <div class="product-image">
+                    <img src="${imageUrl}" alt="${product.name}" loading="lazy">
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">${product.name}</h3>
+                    <p class="product-description">${product.description}</p>
+                    <span class="product-category">${product.category || 'Sem categoria'}</span>
+                </div>
+            `;
+            
+            return productCard;
+        }
+        
+        // Atualizar botões de filtro
+        function updateCategoryFilters() {
+            // Manter botão "Todos"
+            const existingButtons = Array.from(filtersContainer.querySelectorAll('.filter-btn'));
+            
+            // Remover botões antigos (exceto "todos")
+            existingButtons.forEach(btn => {
+                if (btn.dataset.category !== 'todos') {
+                    btn.remove();
+                }
+            });
+            
+            // Adicionar novos botões
+            categories.forEach(category => {
+                if (category !== 'todos') {
+                    const filterBtn = document.createElement('button');
+                    filterBtn.className = 'filter-btn';
+                    filterBtn.dataset.category = category;
+                    filterBtn.textContent = category;
+                    filterBtn.addEventListener('click', handleFilterClick);
+                    filtersContainer.appendChild(filterBtn);
+                }
+            });
+        }
+        
+        // Handler para clique nos filtros
+        function handleFilterClick(e) {
+            // Atualizar botões ativos
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            e.target.classList.add('active');
+            
+            // Renderizar produtos filtrados
+            renderProducts(e.target.dataset.category);
+        }
+        
+        // =================== FUNÇÕES DE UI ===================
+        
+        function showLoading() {
+            loadingElement.style.display = 'block';
+            isLoading = true;
+        }
+        
+        function hideLoading() {
+            loadingElement.style.display = 'none';
+            isLoading = false;
+        }
+        
+        function showError(message) {
+            errorText.textContent = message;
+            errorElement.classList.remove('hidden');
+            updateSyncStatus(false);
+        }
+        
+        function hideError() {
+            errorElement.classList.add('hidden');
+        }
+        
+        function showMessage(text, type) {
+            // Pode implementar um toast notification se quiser
+            console.log(`${type}: ${text}`);
+        }
+        
+        function updateStats() {
+            productCountEl.textContent = `${products.length} ${products.length === 1 ? 'produto' : 'produtos'}`;
+            lastUpdateEl.textContent = new Date().toLocaleTimeString('pt-BR');
+        }
+        
+        function updateSyncStatus(online) {
+            isOnline = online;
+            if (online) {
+                syncStatus.textContent = '🟢 Online';
+                syncStatus.className = 'sync-status online';
+            } else {
+                syncStatus.textContent = '🔴 Offline';
+                syncStatus.className = 'sync-status offline';
+            }
+        }
+        
+        // =================== EVENT LISTENERS ===================
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ano atual
+            currentYear.textContent = new Date().getFullYear();
+            
+            // Configurar filtro "Todos"
+            document.querySelector('.filter-btn[data-category="todos"]').addEventListener('click', handleFilterClick);
+            
+            // Botão de retry
+            retryBtn.addEventListener('click', loadProducts);
+            
+            // Carregar produtos inicialmente
+            loadProducts();
+            
+            // Monitorar conexão
+            window.addEventListener('online', () => {
+                updateSyncStatus(true);
+                showMessage('Conexão restaurada!', 'success');
+                loadProducts();
+            });
+            
+            window.addEventListener('offline', () => {
+                updateSyncStatus(false);
+                showMessage('Modo offline ativado', 'warning');
+            });
+            
+            // Auto-refresh a cada 5 minutos
+            setInterval(() => {
+                if (isOnline && !isLoading) {
+                    loadProducts();
+                }
+            }, 300000);
+        });
+        
+        // Detecta mudanças no cache (se outro dispositivo adicionar produto)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'catalog-cache' && isOnline) {
+                loadProducts();
+            }
+        });
+    </script>
+</body>
+</html>
