@@ -359,43 +359,28 @@ async function loadProducts() {
         showLoading();
         hideError();
         
-        if (!isOnline) {
-            throw new Error('Sem conexão com a internet');
-        }
+        console.log('Carregando produtos...');
         
-        console.log('Carregando produtos da API:', API_URL);
+        // Usar fetch com proxy
+        const data = await fetchWithProxy('getProducts');
         
-        // USAR ESTE MÉTODO PARA EVITAR CORS
-        // Adicione "t=" + timestamp para evitar cache
-        const timestamp = new Date().getTime();
-        const url = `${API_URL}?action=getProducts&t=${timestamp}`;
-        
-        // Método 1: Tentar com fetch e CORS
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            credentials: 'omit',
-            headers: {
-                'Accept': 'application/json',
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Erro na API: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        console.log('Dados recebidos:', data);
         
         if (data.error) {
             throw new Error(data.error);
         }
         
-        products = data.products || [];
+        products = data.products || data.data?.products || [];
+        
+        if (products.length === 0) {
+            console.warn('Nenhum produto encontrado');
+        }
         
         // Salvar cache local
         localStorage.setItem('catalog-cache', JSON.stringify({
             products: products,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            apiUsed: true
         }));
         
         // Extrair categorias
@@ -408,39 +393,44 @@ async function loadProducts() {
         updateStats();
         updateSyncStatus(true);
         
-        console.log(`✅ Carregados ${products.length} produtos`);
+        console.log(`✅ ${products.length} produtos carregados`);
+        
+        return data;
         
     } catch (error) {
         console.error('❌ Erro ao carregar produtos:', error);
         
-        // Método 2: Usar proxy CORS (fallback)
-        if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
-            console.log('Tentando método alternativo...');
-            await loadProductsWithJSONP();
-            return;
-        }
-        
-        // Método 3: Tentar cache local
+        // Tentar cache local
         try {
-            const cache = localStorage.getItem('catalog-cache');
-            if (cache) {
-                const cached = JSON.parse(cache);
-                // Cache válido por 1 hora
-                if (Date.now() - cached.timestamp < 3600000) {
-                    products = cached.products;
-                    extractCategories();
-                    renderProducts('todos');
-                    updateStats();
-                    showMessage('📡 Usando cache local (modo offline)', 'info');
-                    return;
+            const cacheStr = localStorage.getItem('catalog-cache');
+            if (cacheStr) {
+                const cache = JSON.parse(cacheStr);
+                
+                // Cache válido por 24 horas
+                const cacheAge = Date.now() - cache.timestamp;
+                const maxCacheAge = 24 * 60 * 60 * 1000; // 24 horas
+                
+                if (cacheAge < maxCacheAge) {
+                    products = cache.products || [];
+                    
+                    if (products.length > 0) {
+                        extractCategories();
+                        renderProducts('todos');
+                        updateStats();
+                        
+                        showMessage('📡 Modo offline - usando cache', 'info');
+                        return;
+                    }
                 }
             }
         } catch (cacheError) {
             console.error('Erro no cache:', cacheError);
         }
         
-        // Exibir mensagem de erro
-        showError(`Não foi possível carregar o catálogo: ${error.message}`);
+        // Mostrar erro
+        showError(`Não foi possível carregar o catálogo. 
+            <br><small>Erro: ${error.message}</small>
+            <br><small>URL: ${API_URL}</small>`);
         
     } finally {
         hideLoading();
@@ -797,6 +787,7 @@ if (window.location.hostname === 'localhost' || window.location.hostname.include
 </body>
 
 </html>
+
 
 
 
