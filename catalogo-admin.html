@@ -786,8 +786,7 @@
         btn.parentNode.remove();
     }
     
-    // =================== ADICIONAR PRODUTO SIMPLIFICADO ===================
-    // Adicionar Produto (CORRIGIDO para enviar como form-data)
+   // =================== ADICIONAR PRODUTO - CORRIGIDO ===================
 document.getElementById('upload-form').addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -807,31 +806,33 @@ document.getElementById('upload-form').addEventListener('submit', async function
     submitBtn.disabled = true;
 
     try {
-        // FormData para POST
-        const formData = new FormData();
-        formData.append('action', 'addProduct');
-        formData.append('name', name);
-        formData.append('category', category);
-        formData.append('description', description);
+        // ✅ FORMATO CORRETO - A API ESPERA action COMO PARÂMETRO DE QUERY
+        const url = new URL(API_URL);
+        url.searchParams.append('action', 'addProduct');
         
-        // Adicionar imagens se houver
-        selectedImages.forEach((file, index) => {
-            formData.append(`image${index}`, file);
-        });
+        // ✅ DADOS NO FORMATO QUE A API ESPERA
+        const productData = {
+            name: name,
+            category: category,
+            description: description,
+            images: selectedImages.length > 0 
+                ? await uploadImages() 
+                : ['https://via.placeholder.com/300x200?text=Sem+imagem']
+        };
 
-        console.log('Enviando dados...');
+        console.log('Enviando produto:', productData);
         
-        // Enviar para API usando FormData (melhor para imagens)
-        const response = await fetch(API_URL, {
+        const response = await fetch(url.toString(), {
             method: 'POST',
-            body: formData,
-            // Não definir Content-Type - o browser define automaticamente com boundary
             mode: 'cors',
-            credentials: 'omit'
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(productData)  // Envia como JSON no body
         });
 
         const result = await response.json();
-        console.log('Resposta:', result);
+        console.log('Resposta da API:', result);
 
         if (result.error) {
             throw new Error(result.error);
@@ -848,21 +849,45 @@ document.getElementById('upload-form').addEventListener('submit', async function
         setTimeout(() => loadProducts(), 1000);
 
     } catch (error) {
-        console.error('Erro completo:', error);
-        
-        // Erro específico para CORS
-        if (error.message.includes('CORS') || error.message.includes('NetworkError')) {
-            showMessage('❌ Erro de CORS. Tente acessar de http://localhost ou configurar CORS no servidor.', 'error');
-        } else {
-            showMessage('❌ Erro: ' + error.message, 'error');
-        }
+        console.error('Erro:', error);
+        showMessage('❌ Erro: ' + error.message, 'error');
         
     } finally {
-        // Restaurar botão
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     }
 });
+
+// =================== UPLOAD DE IMAGENS SIMPLIFICADO ===================
+async function uploadImages() {
+    // POR ENQUANTO, USAR IMAGENS PLACEHOLDER
+    // Depois você implementa o upload real para o ImgBB
+    
+    const placeholderImages = [
+        'https://via.placeholder.com/300x200?text=Produto+1',
+        'https://via.placeholder.com/300x200?text=Produto+2',
+        'https://via.placeholder.com/300x200?text=Produto+3'
+    ];
+    
+    // Retorna URLs baseadas no número de imagens selecionadas
+    return selectedImages.map((_, index) => 
+        placeholderImages[index % placeholderImages.length]
+    );
+}
+
+// =================== TESTAR API - ADICIONE ESTA FUNÇÃO ===================
+async function testAPIConnection() {
+    try {
+        const response = await fetch(`${API_URL}?action=test`);
+        const data = await response.json();
+        console.log('API Status:', data.status);
+        showMessage(`✅ API: ${data.status}`, 'success');
+        return data;
+    } catch (error) {
+        console.error('API Error:', error);
+        showMessage('❌ API não respondeu', 'error');
+    }
+}
 
     
     async function uploadImages() {
@@ -979,10 +1004,43 @@ document.getElementById('upload-form').addEventListener('submit', async function
             .then(data => console.log('API Status:', data.status))
             .catch(err => console.warn('API não respondeu:', err));
     });
+
+        // DEBUG - Descobrir formato esperado pela API
+async function discoverAPIFormat() {
+    try {
+        // Tenta enviar um produto de teste para ver o erro
+        const testData = {
+            name: "Teste",
+            category: "Teste",
+            description: "Teste"
+        };
+        
+        const response = await fetch(`${API_URL}?action=addProduct`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(testData)
+        });
+        
+        const result = await response.json();
+        console.log('Formato esperado pela API:', result.format_expected);
+        
+        if (result.format_expected) {
+            alert('Formato esperado pela API:\n' + JSON.stringify(result.format_expected, null, 2));
+        }
+        
+    } catch (error) {
+        console.error('Erro ao descobrir formato:', error);
+    }
+}
+
+// Chame esta função para debug
+// discoverAPIFormat();
+        
 </script>
 </body>
 
 </html>
+
 
 
 
